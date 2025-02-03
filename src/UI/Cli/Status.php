@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bratikov\MQ\UI\Cli;
 
+use Bratikov\MQ\Stream;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputInterface;
@@ -51,18 +52,13 @@ class Status extends Command
 	 */
 	private function getChannels(InputInterface $input, OutputInterface $output): array
 	{
-		$opts = [
-			'http' => [
-				'method' => 'GET',
-				'timeout' => 1,
-			],
-		];
-		$ctx = stream_context_create($opts);
 		/** @var string $host */
 		$host = $input->getOption('host');
 		/** @var int $port */
 		$port = $input->getOption('port');
-		$status = @file_get_contents(sprintf('http://%s:%d/', $host, $port), false, $ctx);
+
+		$status = (new Stream($host, $port))->setTimeout(1)->getResponse();
+
 		if (false === $status) {
 			$output->writeln('<error>Factory is not running</>');
 			exit;

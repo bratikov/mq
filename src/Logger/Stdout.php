@@ -14,7 +14,7 @@ class Stdout extends Generic
 	public function __construct()
 	{
 		error_reporting(E_ERROR);
-		ini_set('display_errors', 1);
+		ini_set('display_errors', true);
 		$mapping = [
 			self::EMERGENCY => 'red',
 			self::ALERT => 'red',

@@ -29,7 +29,7 @@ To install the project in your own application, you need to update your composer
 ```
 
 ## Usage Examples
-Basic usage examples can be found in the examples folder. To simplify the process, additional scripts are provided, and you can use the Docker image bratikov/php:8.4-swoole for easy setup.
+Basic usage examples can be found in the examples' folder. To simplify the process, additional scripts are provided, and you can use the Docker image bratikov/php:8.4-swoole for easy setup.
 
 ### Running the Example
 1. **Clone**:  

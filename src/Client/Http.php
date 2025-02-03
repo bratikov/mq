@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bratikov\MQ\Client;
 
 use Bratikov\MQ\IClient;
+use Bratikov\MQ\Stream;
 use Swoole\Atomic;
 use Swoole\Coroutine\Http\Client as HttpClient;
 
@@ -12,9 +13,9 @@ use function Co\run;
 
 class Http implements IClient
 {
-	public const CONCURENCY = 100;
+	public const CONCURRENCY = 100;
 
-	public function __construct(readonly string $host, readonly int $port, readonly int $concurrency = self::CONCURENCY)
+	public function __construct(readonly string $host, readonly int $port, readonly int $concurrency = self::CONCURRENCY)
 	{
 	}
 
@@ -22,7 +23,7 @@ class Http implements IClient
 	{
 		$sentCount = 0;
 		if (PHP_SAPI === 'cli') {
-			// Send asuncronously with concurency in cli mode
+			// Send asynchronously with concurrency in cli mode
 			$sentAtomic = new Atomic();
 			run(function () use ($channel, &$messages, $sentAtomic) {
 				$pageSize = 1;
@@ -54,22 +55,20 @@ class Http implements IClient
 		} else {
 			// Send synchronously in fpm or any other mode
 			foreach ($messages as $message) {
-				$opts = [
-					'http' => [
-						'method' => 'POST',
-						'header' => "Content-Type: text/plain\r\nContent-Length: ".strlen($message)."\r\n",
-						'content' => $message,
-					],
-				];
-				$ctx = stream_context_create($opts);
-				$response = file_get_contents('http://'.$this->host.':'.$this->port.'/'.$channel, false, $ctx);
-				if (false !== $response) {
-					$statusLine = $http_response_header[0];
-					if (preg_match('#^HTTP/\d+\.\d+ (\d+)#', $statusLine, $matches)) {
-						$httpCode = (int) $matches[1];
-						if (200 === $httpCode) {
-							++$sentCount;
-						}
+				$response = (new Stream($this->host, $this->port))
+					->withContent($message)
+					->getResponse($channel);
+
+				if (false === $response) {
+					continue;
+				}
+
+				global $http_response_header;
+				$statusLine = $http_response_header[0];
+				if (preg_match('#^HTTP/\d+\.\d+ (\d+)#', $statusLine, $matches)) {
+					$httpCode = (int) $matches[1];
+					if (200 === $httpCode) {
+						++$sentCount;
 					}
 				}
 			}

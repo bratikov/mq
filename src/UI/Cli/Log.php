@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bratikov\MQ\UI\Cli;
 
+use Bratikov\MQ\Stream;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputArgument;
@@ -85,13 +86,6 @@ class Log extends Command
 	 */
 	private function getTaskLogs(InputInterface $input, OutputInterface $output): array
 	{
-		$ctx = stream_context_create([
-			'http' => [
-				'method' => 'GET',
-				'timeout' => 1,
-			],
-		]);
-
 		/** @var string $host */
 		$host = $input->getOption('host');
 		/** @var int $port */
@@ -99,7 +93,7 @@ class Log extends Command
 		/** @var string $uuid */
 		$uuid = $input->getArgument('uuid');
 
-		$response = @file_get_contents(sprintf('http://%s:%s/%s', $host, $port, $uuid), false, $ctx);
+		$response = (new Stream($host, $port))->setTimeout(1)->getResponse($uuid);
 		if (false === $response) {
 			$output->writeln('<error>Factory is not running</>');
 			exit;

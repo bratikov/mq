@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bratikov\MQ\UI\Cli;
 
+use Bratikov\MQ\Stream;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -32,25 +33,15 @@ class Signal extends Command
 			}
 		}
 
-		$opts = [
-			'http' => [
-				'method' => 'PATCH',
-				'ignore_errors' => true,
-				'timeout' => 1,
-			],
-		];
-		$ctx = stream_context_create($opts);
 		/** @var string $host */
 		$host = $input->getOption('host');
 		/** @var int $port */
 		$port = $input->getOption('port');
-		$response = @file_get_contents(sprintf(
-			'http://%s:%s/%s/%s',
-			$host,
-			$port,
-			$this->getName(),
-			$channelName
-		), false, $ctx);
+
+		$response = (new Stream($host, $port, 'PATCH'))
+			->setTimeout(1)
+			->ignoreErrors()
+			->getResponse($this->getName().'/'.$channelName);
 
 		if (false === $response) {
 			$output->writeln('<error>Factory is not running</>');
